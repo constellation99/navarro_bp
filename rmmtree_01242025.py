@@ -317,6 +317,42 @@ class RMMTree:
             return 0
         return result[0] 
 
+    def simple_fwdsearch(self, i, d):
+        """
+        Simple version: Return smallest j > i such that get_excess(j) = get_excess(i) + d.
+        O(n) worst-case scanning from i+1..n.
+        """
+        start_ex = self.get_excess(i)
+        target = start_ex + d
+        # we'll check j in [i+1..n], or up to n inclusively if you allow get_excess(n)
+        for j in range(i+1, self.n+1):
+            if self.get_excess(j) == target:
+                return j
+        return None  # not found
+
+    def simple_bwdsearch(self, i, d):
+        """
+        Simple version: Return largest j < i such that get_excess(j) = get_excess(i) + d.
+        O(n) worst-case scanning from i-1..0.
+        """
+        start_ex = self.get_excess(i)
+        target = start_ex + d
+        for j in range(i-1, -1, -1):
+            if self.get_excess(j) == target:
+                return j
+        return None
+    
+    def close(self, i):
+        return self.simple_fwdsearch(i, -1)
+    
+    def open(self, i):
+        j = self.simple_bwdsearch(i, 0)
+        return None if j is None else j+1
+    
+    def enclose(self, i):
+        j = self.simple_bwdsearch(i, -2)
+        return None if j is None else j+1
+    
     # For debugging
     def print_tree(self):
         print(f"\n=== rmm-tree ===")
@@ -452,42 +488,6 @@ if __name__ == "__main__":
     print('Example Sequence:', parentheses_sequence)
     rmm = RMMTree(parentheses_sequence, b=4)  
     rmm.print_tree() 
-
-def simple_fwdsearch(self, i, d):
-    """
-    Simple version: Return smallest j > i such that get_excess(j) = get_excess(i) + d.
-    O(n) worst-case scanning from i+1..n.
-    """
-    start_ex = self.get_excess(i)
-    target = start_ex + d
-    # we'll check j in [i+1..n], or up to n inclusively if you allow get_excess(n)
-    for j in range(i+1, self.n+1):
-        if self.get_excess(j) == target:
-            return j
-    return None  # not found
-
-def simple_bwdsearch(self, i, d):
-    """
-    Simple version: Return largest j < i such that get_excess(j) = get_excess(i) + d.
-    O(n) worst-case scanning from i-1..0.
-    """
-    start_ex = self.get_excess(i)
-    target = start_ex + d
-    for j in range(i-1, -1, -1):
-        if self.get_excess(j) == target:
-            return j
-    return None
-
-def close(self, i):
-    return self.simple_fwdsearch(i, -1)
-
-def open(self, i):
-    j = self.simple_bwdsearch(i, 0)
-    return None if j is None else j+1
-
-def enclose(self, i):
-    j = self.simple_bwdsearch(i, -2)
-    return None if j is None else j+1
 
 
 # TODO: Error handling, more testing, additional functions
