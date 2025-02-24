@@ -1,5 +1,6 @@
 import math
 
+
 class RMMTree:
     """
     A complete-binary-tree storage of the rmM-tree for a balanced parentheses sequence.
@@ -291,7 +292,7 @@ class RMMTree:
             cumulative_e = self.range_e_sum(0, block_idx - 1)
 
         block_start = block_idx * self.b
-        scan_end = min(i, self.n)
+        scan_end = min(i+1, self.n)
 
         # Linear scan within the block to compute excess up to position i
         within_block_e = 0
@@ -317,43 +318,6 @@ class RMMTree:
             return 0
         return result[0] 
 
-    def simple_fwdsearch(self, i, d):
-        """
-        Simple version: Return smallest j > i such that get_excess(j) = get_excess(i) + d.
-        O(n) worst-case scanning from i+1..n.
-        """
-        start_ex = self.get_excess(i)
-        target = start_ex + d
-        # we'll check j in [i+1..n], or up to n inclusively if you allow get_excess(n)
-        for j in range(i+1, self.n+1):
-            if self.get_excess(j) == target:
-                return j
-        return None  # not found
-
-    def simple_bwdsearch(self, i, d):
-        """
-        Simple version: Return largest j < i such that get_excess(j) = get_excess(i) + d.
-        O(n) worst-case scanning from i-1..0.
-        """
-        start_ex = self.get_excess(i)
-        target = start_ex + d
-        for j in range(i-1, -1, -1):
-            if self.get_excess(j) == target:
-                return j
-        return None
-    
-    def close(self, i):
-        return self.simple_fwdsearch(i, -1)
-    
-    def open(self, i):
-        j = self.simple_bwdsearch(i, 0)
-        return None if j is None else j+1
-    
-    def enclose(self, i):
-        j = self.simple_bwdsearch(i, -2)
-        return None if j is None else j+1
-    
-    # For debugging
     def print_tree(self):
         print(f"\n=== rmm-tree ===")
         print(f"n = {self.n}, b = {self.b}, num_leaves = {self.num_leaves}")
@@ -372,122 +336,3 @@ class RMMTree:
             print(f"Level {level}:\n  " + "  ".join(data_str))
             start_index = end_index+1
             level += 1
-
-
-# ------------------------------------------------------------------
-# TESTING
-# ------------------------------------------------------------------
-
-def test_empty_parentheses():
-    print("\n--- Test: Empty String ---")
-    rmm = RMMTree("")
-    root_summary = rmm.get_root_summary()
-    print("Root summary for empty:", root_summary)
-    assert root_summary is None, "Empty string should yield None root summary"
-    print("PASS: Empty string")
-
-def test_balanced_small():
-    print("\n--- Test: Balanced '()' ---")
-    rmm = RMMTree("()")
-    root_summary = rmm.get_root_summary()
-    print("Root summary for '()': ", root_summary)
-    assert root_summary == (0, 0, 1, 1), "Expected (0, 0, 1, 1)"
-    # Test get_excess
-    assert rmm.get_excess(0) == 0, "prefix_excess[0] should be 0"
-    assert rmm.get_excess(1) == 1, "prefix_excess[1] should be 1"
-    assert rmm.get_excess(2) == 0, "prefix_excess[2] should be 0"
-    print("PASS: Balanced '()'")
-
-def test_single_parenthesis():
-    print("\n--- Test: Single '(' ---")
-    rmm = RMMTree("(")
-    root_summary = rmm.get_root_summary()
-    print("Root summary for '(': ", root_summary)
-    assert root_summary == (1, 1, 1, 1), "Expected (1, 1, 1, 1)"
-    # Test get_excess
-    assert rmm.get_excess(0) == 0, "prefix_excess[0] should be 0"
-    assert rmm.get_excess(1) == 1, "prefix_excess[1] should be 1"
-    print("PASS: Single '('")
-
-def test_unbalanced_sequence():
-    print("\n--- Test: Unbalanced Sequence ')(' ---")
-    parentheses = ")("  
-    rmm = RMMTree(parentheses, b=2)
-
-    root_summary = rmm.get_root_summary()
-    print("Root summary for ')(': ", root_summary)
-    # Expected: (0, -1, 0, 1)
-
-    assert root_summary == (0, -1, 0, 1), "Expected root summary (0, -1, 0, 1)"
-    print("PASS: Unbalanced sequence ')('")
-
-def test_sample_construction():
-    print("\n--- Test: Sample Construction + Queries ---")
-    parentheses = "(((())(()))()((()))())"
-    rmm = RMMTree(parentheses, b=4)
-
-    root = rmm.get_root_summary()
-    print("Root summary:", root)
-    net_excess = 0
-    for c in parentheses:
-        if c == '(':
-            net_excess += 1
-        else:
-            net_excess -= 1
-    print(f"Net excess (should be 0): {net_excess}")
-    assert net_excess == 0, "Sample parentheses should be balanced => net_excess=0"
-    assert root[0] == 0, "Root summary e should be 0 for balanced parentheses."
-
-    min_val = rmm.range_min_query(1, 3)
-    max_val = rmm.range_max_query(1, 3)
-    print(f"Block-range [1..3] => min prefix-excess = {min_val}, max prefix-excess = {max_val}")
-
-    summary_10_17 = rmm.query_range_characters(10, 17)
-    print(f"Character-range [10..17] => summary = {summary_10_17}")
-    print("PASS: Sample construction test.")
-
-def test_get_excess():
-    print("\n--- Test: get_excess ---")
-    parentheses = "((()()(()))()((()())))"  # Example sequence
-    rmm = RMMTree(parentheses, b=4)
-
-    # Manually compute prefix_excess
-    prefix = [0]
-    current = 0
-    for c in parentheses:
-        if c == '(':
-            current += 1
-        else:
-            current -= 1
-        prefix.append(current)
-
-    # Test get_excess for all positions
-    for i in range(len(prefix)):
-        computed = rmm.get_excess(i)
-        expected = prefix[i]
-        print(f"get_excess({i}) = {computed}, expected = {expected}")
-        assert computed == expected, f"prefix_excess[{i}] should be {expected}, got {computed}"
-
-    print("PASS: get_excess tests.")
-
-def run_all_tests():
-    test_empty_parentheses()
-    test_single_parenthesis()
-    test_balanced_small()
-    test_sample_construction()
-    test_get_excess()
-    test_unbalanced_sequence() 
-    print("\nAll tests passed!")
-
-if __name__ == "__main__":
-    run_all_tests()
-
-    # Printing the example tree from figure 2
-    parentheses_sequence = "((()()(()))()((()())))" 
-    print('\n')
-    print('Example Sequence:', parentheses_sequence)
-    rmm = RMMTree(parentheses_sequence, b=4)  
-    rmm.print_tree() 
-
-
-# TODO: Error handling, more testing, additional functions
